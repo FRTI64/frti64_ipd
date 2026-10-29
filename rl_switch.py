@@ -16,12 +16,16 @@ The source candidate is defined for 100-round matches: it cooperates on the
 first day, stays cooperative until the opponent's first defection, and defects
 on day 100.  This port preserves that horizon.
 
+Only the stochastic ``sample`` mode is supported here, because that is the
+mode used by the pri_dile statistical and test protocol.  The old
+deterministic ``argmax`` variant is archived in
+``archive/rl_switch_argmax.py``.
+
 Usage::
 
     from rl_switch import RLSwitch
 
     player = RLSwitch()                 # stochastic "sample" mode
-    player = RLSwitch(mode="argmax")    # deterministic variant
     match = axelrod.Match((player, axelrod.TitForTat()), turns=100)
     match.play()
 
@@ -6279,8 +6283,7 @@ class _MLP:
 class _NeuralPolicy:
     """One embedded ipd-neural-policy-v1 MLP policy."""
 
-    def __init__(self, spec: dict, seed: int, mode: str):
-        self.mode = mode
+    def __init__(self, spec: dict, seed: int):
         self.rng = random.Random(seed)
         self.safe = bool(spec.get("safe", True))
         self.temperature = float(spec.get("temperature", 1.0))
@@ -6291,8 +6294,6 @@ class _NeuralPolicy:
     def predict_proba(self, mine: Sequence[int],
                       theirs: Sequence[int]) -> float:
         logit = self.net.logit(extract_features(mine, theirs))
-        if self.mode == "argmax":
-            return 1.0 if logit >= 0 else 0.0
         z = max(-40.0, min(40.0, logit / max(1e-6, self.temperature)))
         return 1.0 / (1.0 + math.exp(-z))
 
@@ -6302,8 +6303,6 @@ class _NeuralPolicy:
         if self.safe and (t == 0 or D not in theirs):
             return C
         p_defect = self.predict_proba(mine, theirs)
-        if self.mode == "argmax":
-            return D if p_defect >= 0.5 else C
         return D if self.rng.random() < p_defect else C
 
 
@@ -6313,7 +6312,7 @@ class _NeuralPolicy:
 
 
 class RLSwitch(Player):
-    """Axelrod ``Player`` wrapper around the RL-Switch meta policy."""
+    """Axelrod ``Player`` wrapper around the RL-Switch sample-mode policy."""
 
     name = DISPLAY
     classifier = {
@@ -6328,14 +6327,16 @@ class RLSwitch(Player):
     def __init__(self, seed: int = 20261024, mode: str = "sample",
                  name: str | None = None):
         super().__init__()
-        if mode not in ("sample", "argmax"):
-            raise ValueError("mode must be 'sample' or 'argmax'")
+        if mode != "sample":
+            raise ValueError(
+                "RL-Switch supports only 'sample' mode; the argmax variant "
+                "is archived in archive/rl_switch_argmax.py")
         self.seed = int(seed)
         self.mode = mode
         if name is not None:
             self.name = str(name)
-        self.base = _NeuralPolicy(_WEIGHTS["base"], self.seed, mode)
-        self.alt = _NeuralPolicy(_WEIGHTS["alt"], self.seed + 1, mode)
+        self.base = _NeuralPolicy(_WEIGHTS["base"], self.seed)
+        self.alt = _NeuralPolicy(_WEIGHTS["alt"], self.seed + 1)
         self.switched = False
 
     def strategy(self, opponent: Player) -> Action:
