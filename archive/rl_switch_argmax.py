@@ -28,6 +28,9 @@ Usage::
     match.play()
 
 Only the ``axelrod`` package and the Python standard library are required.
+
+Development/evaluation payoff matrix: T=10, R=6, P=1, S=0.
+Use the module-level ``GAME`` with axelrod Match/Tournament.
 """
 from __future__ import annotations
 
@@ -39,7 +42,7 @@ import zlib
 from operator import mul
 from typing import Sequence
 
-from axelrod import Action, Player
+from axelrod import Action, Game, Player
 
 # Internal action convention used by the original policy code.
 C = 0
@@ -48,6 +51,9 @@ D = 1
 # Axelrod action objects.
 A_C = Action.C
 A_D = Action.D
+
+# Development/evaluation payoff matrix: T=10, R=6, P=1, S=0.
+GAME = Game(r=6, s=0, t=10, p=1)
 
 FEATURE_VERSION = "ipd-neural-features-v1"
 DISPLAY = "RL-Switch"
@@ -6368,7 +6374,7 @@ def build(seed: int = 20261024, mode: str = "sample",
     return RLSwitch(seed=seed, mode=mode, name=name)
 
 
-__all__ = ["RLSwitch", "build"]
+__all__ = ["RLSwitch", "build", "GAME"]
 
 
 if __name__ == "__main__":
@@ -6376,7 +6382,7 @@ if __name__ == "__main__":
 
     for opponent in (axl.Cooperator(), axl.Defector(), axl.TitForTat(),
                      axl.Grudger()):
-        match = axl.Match((RLSwitch(), opponent), turns=100)
+        match = axl.Match((RLSwitch(), opponent), turns=100, game=GAME)
         match.play()
         scores = match.final_score()
         print(f"{RLSwitch.name:10} vs {opponent.name:15} "

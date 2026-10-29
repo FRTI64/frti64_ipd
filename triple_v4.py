@@ -22,13 +22,16 @@ Usage::
     match.play()
 
 Only the ``axelrod`` package and the Python standard library are required.
+
+Development/evaluation payoff matrix: T=10, R=6, P=1, S=0.
+Use the module-level ``GAME`` with axelrod Match/Tournament.
 """
 from __future__ import annotations
 
 import math
 import random
 
-from axelrod import Action, Player
+from axelrod import Action, Game, Player
 
 # Internal action convention used by the original policy code.
 C = 0
@@ -37,6 +40,9 @@ D = 1
 # Axelrod action objects.
 A_C = Action.C
 A_D = Action.D
+
+# Development/evaluation payoff matrix: T=10, R=6, P=1, S=0.
+GAME = Game(r=6, s=0, t=10, p=1)
 
 DISPLAY = "Triple-v4"
 SEED = 20261027
@@ -708,7 +714,7 @@ def build(seed: int = SEED, name: str | None = None,
     return TripleV4(seed=seed, name=name)
 
 
-__all__ = ["TripleV4", "build"]
+__all__ = ["TripleV4", "build", "GAME"]
 
 
 if __name__ == "__main__":
@@ -716,7 +722,7 @@ if __name__ == "__main__":
 
     for opponent in (axl.Cooperator(), axl.Defector(), axl.TitForTat(),
                      axl.Grudger()):
-        match = axl.Match((TripleV4(), opponent), turns=100)
+        match = axl.Match((TripleV4(), opponent), turns=100, game=GAME)
         match.play()
         scores = match.final_score()
         print(f"{TripleV4.name:10} vs {opponent.name:15} "
