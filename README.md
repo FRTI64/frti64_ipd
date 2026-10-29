@@ -2,6 +2,17 @@
 
 本仓库包含 24 个可直接用于 [Axelrod](https://github.com/Axelrod-Python/Axelrod) 的独立单文件迭代囚徒困境（IPD）策略。每个文件只依赖 `axelrod` 和 Python 标准库，不依赖其他仓库代码；学习型策略的权重已内嵌。
 
+## 参赛策略
+
+最终参赛提交为以下两个策略：
+
+| 文件 | 类 | 名称 | 类型 |
+|---|---|---|---|
+| **`rl_switch.py`** | `RLSwitch` | **RL-Switch** | RL-Wide160 → RL-Repair 窄切换 |
+| **`triple_v4.py`** | `TripleV4` | **Triple-v4** | Final + Responsive3 + BayesPlus 多数投票 |
+
+其余文件为候选、历史或对照策略，不参与最终参赛提交。
+
 > **重要：所有策略都在 `T=10, R=6, P=1, S=0` 的收益矩阵下开发和测试。**
 > Axelrod 的默认 `Game()` 是 `T=5, R=3, P=1, S=0`，直接使用默认矩阵会得到不可比的分数。
 > 请使用下面的 `GAME`：
@@ -81,7 +92,7 @@ python selfplay.py
 | `bayes_tuned.py` | `BayesTuned` | bayes-tuned | 内嵌 tuned BayesPlus 先验/阈值 |
 | `hybrid.py` | `Hybrid` | hybrid | tuned Final + 默认 Responsive3 |
 | `triple_majority.py` | `TripleMajority` | triple-majority | Final + Resp3 + BayesPlus 多数投票 |
-| `triple_v4.py` | `TripleV4` | triple-v4 | Triple-majority 的噪声互惠者分支版本 |
+| **`triple_v4.py`** | **`TripleV4`** | triple-v4 | **参赛策略**；Triple-majority 的噪声互惠者分支版本 |
 
 ### 学习型 / 元策略
 
@@ -95,7 +106,7 @@ python selfplay.py
 | `rl_pattern.py` | `RLPattern` | rl-pattern | RL-Pattern MLP |
 | `rl_wide.py` | `RLWide` | rl-wide | RL-Wide 128/128 MLP |
 | `rl_wide160.py` | `RLWide160` | rl-wide160 | RL-Wide160 160/128 MLP |
-| `rl_switch.py` | `RLSwitch` | rl-switch | RL-Wide160 + RL-Repair 双 MLP + 切换规则 |
+| **`rl_switch.py`** | **`RLSwitch`** | rl-switch | **参赛策略**；RL-Wide160 + RL-Repair 双 MLP + 切换规则 |
 | `rl_dagger_gru.py` | `GRUDagger` | rl-dagger-gru | GRU-DAgger 64 隐层 GRU |
 | `rl_gate.py` | `RLGate` | rl-gate | 双 MLP + 25 维 logistic gate |
 | `adv_mlp.py` | `AdvMLP` | adv-mlp | Neural 基座 + 约束利用规则 |
