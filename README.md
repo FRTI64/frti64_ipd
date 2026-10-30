@@ -1,6 +1,6 @@
 # frti64_ipd — Axelrod IPD 策略集
 
-本仓库包含 24 个可直接用于 [Axelrod](https://github.com/Axelrod-Python/Axelrod) 的独立单文件迭代囚徒困境（IPD）策略。每个文件只依赖 `axelrod` 和 Python 标准库，不依赖其他仓库代码；学习型策略的权重已内嵌。
+本仓库包含 25 个可直接用于 [Axelrod](https://github.com/Axelrod-Python/Axelrod) 的独立单文件迭代囚徒困境（IPD）策略。每个文件只依赖 `axelrod` 和 Python 标准库，不依赖其他仓库代码；学习型策略的权重已内嵌。
 
 ## 参赛策略
 
@@ -8,8 +8,10 @@
 
 | 文件 | 类 | 名称 | 类型 |
 |---|---|---|---|
-| **`rl_switch.py`** | `RLSwitch` | **RL-Switch** | RL-Wide160 → RL-Repair 窄切换 |
+| **`rl_full_guard_c.py`** | `RLFullGuardC` | **RL-FullGuard-C** | RL-V5-FT-Complex + probe/late 反应式防护 |
 | **`triple_v4.py`** | `TripleV4` | **Triple-v4** | Final + Responsive3 + BayesPlus 多数投票 |
+
+上一版学习型参赛策略 `rl_switch.py` / `RLSwitch` 保留为 fallback / 对照，不再作为首选。
 
 其余文件为候选、历史或对照策略，不参与最终参赛提交。
 
@@ -39,12 +41,12 @@ python -m pip install axelrod==4.14.0
 ```python
 import axelrod as axl
 
-from rl_switch import RLSwitch
+from rl_full_guard_c import RLFullGuardC
 from triple_v4 import TripleV4
 
 GAME = axl.Game(r=6, s=0, t=10, p=1)
 
-players = [RLSwitch(), TripleV4(), axl.TitForTat()]
+players = [RLFullGuardC(), TripleV4(), axl.TitForTat()]
 
 results = axl.Tournament(
     players,
@@ -61,7 +63,7 @@ print(results.ranked_names)
 
 ```python
 match = axl.Match(
-    (RLSwitch(), axl.TitForTat()),
+    (RLFullGuardC(), axl.TitForTat()),
     turns=100,
     game=GAME,
 )
@@ -72,6 +74,7 @@ print(match.final_score())
 每个文件都可以直接运行自检（自检已经使用 `GAME`）：
 
 ```bash
+python rl_full_guard_c.py
 python rl_switch.py
 python triple_v4.py
 python final_tuned.py
@@ -106,7 +109,8 @@ python selfplay.py
 | `rl_pattern.py` | `RLPattern` | rl-pattern | RL-Pattern MLP |
 | `rl_wide.py` | `RLWide` | rl-wide | RL-Wide 128/128 MLP |
 | `rl_wide160.py` | `RLWide160` | rl-wide160 | RL-Wide160 160/128 MLP |
-| **`rl_switch.py`** | **`RLSwitch`** | rl-switch | **参赛策略**；RL-Wide160 + RL-Repair 双 MLP + 切换规则 |
+| **`rl_full_guard_c.py`** | **`RLFullGuardC`** | rl-full-guard-c | **参赛策略**；V5-FT-Complex 160/128 MLP + probe/late 反应式 guard |
+| `rl_switch.py` | `RLSwitch` | rl-switch | 上一版学习型参赛策略 / fallback；RL-Wide160 + RL-Repair 双 MLP + 切换规则 |
 | `rl_dagger_gru.py` | `GRUDagger` | rl-dagger-gru | GRU-DAgger 64 隐层 GRU |
 | `rl_gate.py` | `RLGate` | rl-gate | 双 MLP + 25 维 logistic gate |
 | `adv_mlp.py` | `AdvMLP` | adv-mlp | Neural 基座 + 约束利用规则 |
@@ -147,16 +151,19 @@ player = RLSwitchArgmax(mode="argmax")
 
 ## 复现与验证
 
-- 每个导出文件都与原始 pri_dile 候选做过逐动作 parity；
+- 每个导出文件都与原始 pri_dile 候选做过逐动作 parity；`rl_full_guard_c.py`
+  在 3 个 seed × 4 组固定对手序列上与 pri_dile `rl-full-guard-c` 逐动作一致；
 - 标准 3/0/5/1 矩阵下覆盖 224 个非 long-run Axelrod 策略、100 回合对局；
 - `T=10, R=6, P=1, S=0` 矩阵下覆盖 213 个可构造的 Axelrod 策略；其余 11 个是 Axelrod 内置零行列式策略，它们的 four-vector 按标准 3/0/5/1 校准，在自定义矩阵下会直接拒绝构造，这是 Axelrod 对手库的限制；
 - `GRU`、`GRU-DAgger`、`Adv-GRU`、`SelfPlay-GRU` 会在每场 `reset()` 时重建隐状态；
 - `RL-Gate` 在 `t=10` 时读取前 10 回合并锁定一个专家；
-- `RL-Switch` 在前 6 回合检测到“双方都背叛过至少 2 次、对手最新一手合作”后切换到 RL-Repair。
+- `RL-Switch` 在前 6 回合检测到“双方都背叛过至少 2 次、对手最新一手合作”后切换到 RL-Repair；
+- `RL-FullGuard-C` 在对手首次 D 于零基 5/7（probe）或 ≥9（late）、连续 3 回合 D 且我方未主动 D 时触发；probe 响应 `C,C,C`，late 响应 `D,C,C`，对手回 C 立即释放。
 
 ## 限制
 
 - 策略按 **100 回合**设计；请使用 `turns=100`，不要直接用于其他长度。
+- `RL-FullGuard-C` 的 probe/late 窗口按零基回合计；改为其他回合数会改变触发位置。
 - 开发/测试收益矩阵固定为 `T=10, R=6, P=1, S=0`；不要用 Axelrod 默认矩阵比较分数。
 - `sample` 模式是随机策略；同一 seed 下可复现，不同 seed 会有动作差异。
 - `SelfPlay-GRU` 使用独立的 21 维 observation，不共享 85 维 neural features。
