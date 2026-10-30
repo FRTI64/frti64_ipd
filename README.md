@@ -1,6 +1,6 @@
 # frti64_ipd — Axelrod IPD 策略集
 
-本仓库包含 25 个可直接用于 [Axelrod](https://github.com/Axelrod-Python/Axelrod) 的独立单文件迭代囚徒困境（IPD）策略。每个文件只依赖 `axelrod` 和 Python 标准库，不依赖其他仓库代码；学习型策略的权重已内嵌。
+本仓库包含 30 个可直接用于 [Axelrod](https://github.com/Axelrod-Python/Axelrod) 的独立单文件迭代囚徒困境（IPD）策略。每个文件只依赖 `axelrod` 和 Python 标准库，不依赖其他仓库代码；学习型策略的权重已内嵌。
 
 ## 参赛策略
 
@@ -97,7 +97,7 @@ python selfplay.py
 | `triple_majority.py` | `TripleMajority` | triple-majority | Final + Resp3 + BayesPlus 多数投票 |
 | **`triple_v4.py`** | **`TripleV4`** | triple-v4 | **参赛策略**；Triple-majority 的噪声互惠者分支版本 |
 
-### 学习型 / 元策略
+### 学习型 / 元策略（含 2026-10-30/31 新增）
 
 | 文件 | 类 | 原候选 | 内嵌内容 |
 |---|---|---|---|
@@ -109,6 +109,11 @@ python selfplay.py
 | `rl_pattern.py` | `RLPattern` | rl-pattern | RL-Pattern MLP |
 | `rl_wide.py` | `RLWide` | rl-wide | RL-Wide 128/128 MLP |
 | `rl_wide160.py` | `RLWide160` | rl-wide160 | RL-Wide160 160/128 MLP |
+| `rl_v5_ft.py` | `RLV5FT` | rl-v5-ft | V5-FT 160/128 MLP（train_v5 fine-tune） |
+| `rl_v5_ft_complex.py` | `RLV5FTComplex` | rl-v5-ft-complex | V5-FT-Complex 160/128 MLP（train_v5 + train_complex） |
+| `rl_probe_guard.py` | `RLProbeGuard` | rl-probe-guard | V5-FT + 早期 probe 反应式 guard |
+| `rl_defection_guard.py` | `RLDefectionGuard` | rl-defection-guard | V5-FT + late 反应式 guard |
+| `rl_full_guard.py` | `RLFullGuard` | rl-full-guard | V5-FT + probe/late 反应式 guard |
 | **`rl_full_guard_c.py`** | **`RLFullGuardC`** | rl-full-guard-c | **参赛策略**；V5-FT-Complex 160/128 MLP + probe/late 反应式 guard |
 | `rl_switch.py` | `RLSwitch` | rl-switch | 上一版学习型参赛策略 / fallback；RL-Wide160 + RL-Repair 双 MLP + 切换规则 |
 | `rl_dagger_gru.py` | `GRUDagger` | rl-dagger-gru | GRU-DAgger 64 隐层 GRU |
@@ -117,6 +122,11 @@ python selfplay.py
 | `adv_gru.py` | `AdvGRU` | adv-gru | GRU 基座 + 约束利用规则 |
 | `adv_rl.py` | `AdvRL` | adv-rl | BC/PPO MLP 基座 + 激进利用规则 |
 | `selfplay.py` | `SelfPlayGRU` | selfplay | 两层 GRU + 21 维 self-play observation |
+
+> 2026-10-30/31 新增的 `rl_v5_ft` / `rl_v5_ft_complex` /
+> `rl_probe_guard` / `rl_defection_guard` / `rl_full_guard` /
+> `rl_full_guard_c` 均只支持 `sample` 模式，并已与 pri_dile 对应候选
+> 在 3 个 seed × 4 组固定对手序列上做逐动作 parity。
 
 ## 收益矩阵与计分
 
@@ -158,7 +168,8 @@ player = RLSwitchArgmax(mode="argmax")
 - `GRU`、`GRU-DAgger`、`Adv-GRU`、`SelfPlay-GRU` 会在每场 `reset()` 时重建隐状态；
 - `RL-Gate` 在 `t=10` 时读取前 10 回合并锁定一个专家；
 - `RL-Switch` 在前 6 回合检测到“双方都背叛过至少 2 次、对手最新一手合作”后切换到 RL-Repair；
-- `RL-FullGuard-C` 在对手首次 D 于零基 5/7（probe）或 ≥9（late）、连续 3 回合 D 且我方未主动 D 时触发；probe 响应 `C,C,C`，late 响应 `D,C,C`，对手回 C 立即释放。
+- `RL-FullGuard-C` 在对手首次 D 于零基 5/7（probe）或 ≥9（late）、连续 3 回合 D 且我方未主动 D 时触发；probe 响应 `C,C,C`，late 响应 `D,C,C`，对手回 C 立即释放；
+- `RL-ProbeGuard` 只看 probe 窗口（两回合确认）；`RL-DefectionGuard` 只看 late 窗口（三回合确认）；`RL-FullGuard` 是两者的 V5-FT 基座版本。
 
 ## 限制
 
